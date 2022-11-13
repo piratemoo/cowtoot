@@ -1,33 +1,16 @@
 #!/usr/bin/env python3
 
-print('''      
-                    _              _   
-   ___ _____      _| |_ ___   ___ | |_ 
-  / __/ _ \ \ /\ / / __/ _ \ / _ \| __|
- | (_| (_) \ V  V /| || (_) | (_) | |_ 
-  \___\___/ \_/\_/  \__\___/ \___/ \__|
-
-     _(__)_        V
-    '-e e -'__,--.__)` *
-     (o_o)        ) ` *
-      \. /___.  |  *`
-       ||| _)/_)/
-   gnv //_(/_(/_(
-
-A mastodon moderation script                                       
-                                                    ''')
-
 from mastodon import Mastodon
+from cowlogo import logo
+from config import token
+import requests
 
-# Enter access token from the development section under the settings/applications link
-token = 'put your access token in here'
+print(logo)
 
 mastodon = Mastodon(
         access_token=token,
         api_base_url='https://infosec.exchange'
     )
-
-
 
 # Print basic server information/stats
 server = mastodon.instance()
@@ -64,7 +47,7 @@ for report in reports:
     report_date = report['created_at']
     comment = report['comment']
 
-    moderator_assigned = report['assigned_account']['username']
+    moderator_assigned = report['assigned_account']
     moderator_action = report['action_taken']
 
     print(f'''
