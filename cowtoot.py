@@ -35,10 +35,10 @@ def instance_information():
         Toot Character Limit: {max_toot}
         ''')
 
-
+#Change the values to maximize the results you'd like
 def audit_reports(max_pages=2, per_page=50):
     last_id = None
-
+#Handles pagination issues
     for page_number in range(0, max_pages):
         reports = mastodon.admin_reports(resolved=True, max_id=last_id, limit=per_page)
 
