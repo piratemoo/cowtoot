@@ -1,0 +1,2 @@
+Mastodon.py>=1.5.2
+toml>=0.10.2
