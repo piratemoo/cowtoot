@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 
 from mastodon import Mastodon
-from datetime import datetime
+from datetime import datetime, timedelta
 from cowlogo import logo
-from config import token
+from config import config
+import pytz
 
 print(logo)
 
 mastodon = Mastodon(
-    access_token=token,
-    api_base_url='https://infosec.exchange'
+    access_token=config['accessToken'],
+    api_base_url=config['serverURL']
 )
 
 
@@ -36,42 +37,84 @@ def instance_information():
         ''')
 
 #Change the values to maximize the results you'd like
-def audit_reports(max_pages=2, per_page=50):
-    last_id = None
-#Handles pagination issues
-    for page_number in range(0, max_pages):
-        reports = mastodon.admin_reports(resolved=True, max_id=last_id, limit=per_page)
+def get_reports(reportsSince, maxPages=100):
+    reports = []
 
-        if reports is None:
-            return
+    i = 0
+    while True:
+        print(f'Retrieving page {i+1}')
+        if not reports:
+            reportPage = mastodon.admin_reports(resolved=True)
+        else:
+            reportPage = mastodon.fetch_next(reportPage)
+        
+        if reportPage is None:
+            break
 
-        for report in reports:
-            report_category = report['category']
-            last_id = report['id']
+        reports.extend(reportPage)
 
-            target_account = report['target_account']
-            target_username = target_account['username']
-            target_email = target_account['email']
-            report_date = report['created_at'].strftime("%A, %B %d %Y")
+        if is_last_page(reportsSince, reportPage):
+            break
 
-            comment = report['comment']
+        i += 1
+        if i >= maxPages:
+            print("WARNING: max pages reached, reports list will not be accurate")
+            break
+    
+    reportsFiltered = []
+    # Filter the array of reports
+    for report in reports:
+        if report['created_at'] > reportsSince:
+            reportsFiltered.append(report)
+    
+    return reportsFiltered
+        
+    
 
-            if report['assigned_account']:
-                moderator_assigned = report['assigned_account']['username']
-            else:
-                moderator_assigned = 'Unassigned'
 
-            moderator_action = report['action_taken']
+def is_last_page(reportsSince, reports):
+    report_date = reports[-1:][0]['created_at']
+    return report_date < reportsSince
 
-            print(f'''
-                Category: {str(report_category).capitalize()}
-                Account Reported: {target_username} ({target_email})
-                Report Date: {report_date}
-                Reporter Comments: {comment}
-                Moderator assigned: {moderator_assigned}
-                Action Taken: {report['action_taken']}
-                ''')
+
+
+def print_report_stats(since):
+    
+    reports = get_reports(since)
+
+    print(f'Since {since.strftime("%Y-%m-%d %H:%M:%S")} UTC, there were {len(reports)} resolved reports.')
+
+    return
+
+def print_all_reports(since):
+    reports = get_reports(since)
+    for report in reports:
+        report_category = report['category']
+
+        target_account = report['target_account']
+        target_username = target_account['username']
+        target_email = target_account['email']
+        report_date = report['created_at'].strftime("%A, %B %d %Y")
+
+        comment = report['comment']
+
+        if report['assigned_account']:
+            moderator_assigned = report['assigned_account']['username']
+        else:
+            moderator_assigned = 'Unassigned'
+
+        #moderator_action = report['action_taken']
+
+        print(f'''
+            Category: {str(report_category).capitalize()}
+            Account Reported: {target_username} ({target_email})
+            Report Date: {report_date}
+            Reporter Comments: {comment}
+            Moderator assigned: {moderator_assigned}
+            Action Taken: {report['action_taken']}
+            ''')
 
 
 instance_information()
-audit_reports()
+lastDay = pytz.UTC.localize(datetime.now() - timedelta(days=10))
+print_report_stats(lastDay)
