@@ -37,11 +37,12 @@ def instance_information():
         ''')
 
 #Change the values to maximize the results you'd like
-def get_reports(reportsSince, maxPages=10):
+def get_reports(reportsSince, maxPages=100):
     reports = []
 
     i = 0
     while True:
+        print(f'Retrieving page {i+1}')
         if not reports:
             reportPage = mastodon.admin_reports(resolved=True)
         else:
@@ -115,5 +116,5 @@ def print_all_reports(since):
 
 
 instance_information()
-lastDay = pytz.UTC.localize(datetime.now() - timedelta(days=3))
+lastDay = pytz.UTC.localize(datetime.now() - timedelta(days=10))
 print_report_stats(lastDay)
